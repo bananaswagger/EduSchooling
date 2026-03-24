@@ -1,114 +1,144 @@
-# 📅 EduScheduler
+# 🏫 EduSchool — Gestão de Turmas, Professores e Disciplinas
 
-Sistema de gestão de horários escolares — Node.js + Express + SQLite.
+Plataforma web para gestão de informação escolar (turmas, professores e disciplinas), com autenticação por perfis e atualizações em tempo real.
 
 ---
 
-## 🚀 Instalação e arranque
+## 🚀 Instalação
+
+### Pré-requisitos
+- [Node.js](https://nodejs.org/) v18+
+- [XAMPP](https://www.apachefriends.org/) (ou qualquer servidor MySQL)
+
+### 1. Estrutura de ficheiros
+
+```
+projeto/
+├── server.js          ← (server_simples.js renomeado)
+├── db.js
+├── package.json
+└── public/
+    ├── index.html     ← (index_simples.html renomeado)
+    ├── login.html
+    └── css/
+        └── style.css
+```
+
+### 2. Instalar dependências
 
 ```bash
-# 1. Instalar dependências
 npm install
+```
 
-# 2. Arrancar o servidor
+### 3. Criar a base de dados
+
+1. Abre o XAMPP e arranca **Apache** e **MySQL**
+2. Vai a `http://localhost/phpmyadmin`
+3. Clica em **SQL**, cola o conteúdo de `eduscheduler_simples.sql` e clica **Executar**
+
+### 4. Configurar ligação à base de dados
+
+Abre o `db.js` e confirma as credenciais:
+
+```js
+const pool = mysql.createPool({
+  host:     'localhost',
+  user:     'root',
+  password: '',      // muda se tiveres password no MySQL
+  database: 'eduscheduler_simples',
+});
+```
+
+### 5. Arrancar o servidor
+
+```bash
 npm start
-
-# (Desenvolvimento com hot-reload)
-npm run dev
 ```
 
-Abre o browser em → **http://localhost:3000**
+Acede a **http://localhost:3000**
 
 ---
 
-## 🗂️ Estrutura do projeto
+## 🔑 Credenciais de Demo
 
-```
-eduscheduler/
-├── src/
-│   ├── server.js     # Servidor Express + todas as rotas REST
-│   └── db.js         # Base de dados SQLite (schema + seed)
-├── public/
-│   ├── index.html    # Frontend SPA
-│   ├── css/style.css
-│   └── js/app.js
-├── data/
-│   └── escola.db     # Criado automaticamente
-└── package.json
-```
+| Conta | Email | Password |
+|-------|-------|----------|
+| Administrador | `admin@escola.pt` | `admin123` |
 
 ---
 
-## 🔌 API REST
+## 👥 Perfis de Utilizador
 
-### Turmas
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/turmas` | Listar turmas |
-| POST | `/api/turmas` | Criar turma `{nome, ano, area}` |
-| PUT | `/api/turmas/:id` | Editar turma |
-| DELETE | `/api/turmas/:id` | Apagar turma (e aulas) |
+| Perfil | Permissões | Registo |
+|--------|-----------|---------|
+| **Aluno** | Ver tudo, sem editar | Livre |
+| **Professor** | Ver tudo, sem editar | Password especial: `prof2024` |
+| **Admin** | Adicionar e apagar registos | Password especial: `admin2024` |
 
-### Professores
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/professores` | Listar professores |
-| POST | `/api/professores` | `{nome, email?, grupo?}` |
-| PUT | `/api/professores/:id` | Editar |
-| DELETE | `/api/professores/:id` | Apagar |
-
-### Tipos de Disciplina
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/tipos` | Listar tipos |
-| POST | `/api/tipos` | `{nome, cor, bg}` |
-| PUT | `/api/tipos/:id` | Editar |
-| DELETE | `/api/tipos/:id` | Apagar (se não usado) |
-
-### Disciplinas
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/disciplinas` | Listar disciplinas |
-| POST | `/api/disciplinas` | `{nome, icone?, tipo_id, abreviatura?}` |
-| PUT | `/api/disciplinas/:id` | Editar |
-| DELETE | `/api/disciplinas/:id` | Apagar (se sem aulas) |
-
-### Aulas
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/aulas` | Listar (query: `turma_id`, `dia`, `tipo`) |
-| GET | `/api/aulas/conflitos` | Verificar conflitos de horário |
-| POST | `/api/aulas` | `{turma_id, disciplina_id, professor_id, dia_semana, hora_inicio, duracao, sala}` |
-| PUT | `/api/aulas/:id` | Editar aula |
-| DELETE | `/api/aulas/:id` | Apagar aula |
-
-### Stats
-| Método | Rota |
-|--------|------|
-| GET | `/api/stats?turma_id=1` |
-
----
-
-## 🗃️ Schema da base de dados
-
-```sql
-turmas           -- 10.º A, 11.º B, etc.
-professores      -- nome, email, grupo de recrutamento
-tipos_disciplina -- Obrigatória, Opcional, Extracurricular, etc.
-disciplinas      -- nome, ícone, tipo, cores
-aulas            -- turma + disciplina + professor + dia + hora + sala
-
-VIEW v_aulas     -- join completo para queries simples
-```
+> As passwords especiais podem ser alteradas no `server.js` na variável `ROLE_PASSWORDS`.
 
 ---
 
 ## ✨ Funcionalidades
 
-- **5 vistas**: Horário semanal, Lista, Disciplinas, Professores, Estatísticas
-- **6 tipos de disciplina** com cores personalizáveis
-- **Filtro por tipo** em tempo real
-- **CRUD completo** via painel lateral (Turmas, Professores, Tipos, Disciplinas)
-- **Deteção de conflitos** de horário (turma e professor)
-- **Dados persistentes** em SQLite (`data/escola.db`)
-- **Seed automático** com horário de exemplo no primeiro arranque
+- **🏫 Turmas** — lista de turmas com nome, ano e área
+- **👨‍🏫 Professores** — lista de docentes com nome e email
+- **📚 Disciplinas** — lista de disciplinas com ícone
+- **🔄 Tempo Real** — alterações aparecem automaticamente para todos os utilizadores sem recarregar a página (Socket.io)
+- **📱 Mobile Friendly** — sidebar em drawer, funciona em telemóvel e tablet
+- **🔒 Permissões** — admin pode editar, professor e aluno só veem
+
+---
+
+## 🛠️ Tecnologias
+
+| Tecnologia | Uso |
+|-----------|-----|
+| Node.js + Express | Servidor e API |
+| MySQL + phpMyAdmin | Base de dados |
+| mysql2 | Driver Node.js para MySQL |
+| Socket.io | Atualizações em tempo real |
+| bcryptjs | Hash de passwords |
+| express-session | Gestão de sessões |
+| HTML / CSS / JS | Interface |
+
+---
+
+## 📁 Estrutura de Ficheiros
+
+```
+projeto/
+├── server.js          — Servidor e todas as rotas da API
+├── db.js              — Ligação ao MySQL
+├── eduscheduler_simples.sql — Script para criar a base de dados
+├── package.json       — Dependências
+└── public/
+    ├── index.html     — Página principal
+    ├── login.html     — Login e registo
+    └── css/
+        └── style.css  — Estilos
+```
+
+---
+
+## 🔒 Segurança
+
+- Passwords guardadas com **bcrypt** (custo 12)
+- Permissões validadas no **servidor** (não só no frontend)
+- Sessões com expiração de 7 dias
+
+---
+
+## 👨‍💻 Autores
+
+| Nome | Nº Aluno |
+|------|---------|
+| Martim Gamas | BA2720 |
+| Francisco Ferreira | BA2718 |
+| Luís Belchior | BA2681 |
+| Rodrigo Trilho | BA2682 |
+
+**Professor:** André Rolo  
+**Escola:** Escola Profissional Bento de Jesus Caraça — Delegação do Barreiro  
+**Curso:** Técnico de Gestão e Programação de Sistemas Informáticos  
+**Ciclo:** 2024/2027
