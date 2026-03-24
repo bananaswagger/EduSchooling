@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduScheduler — Entrar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0ede8; --surface: #fff; --border: #e2ddd7;
+    --text: #1a1814; --text2: #6b6560; --text3: #a09890;
+    --accent: #00a8b5; --accent-light: #e0f7f9;
+    --danger: #d63a3a; --danger-light: #fde8e8;
+    --warn: #e07c1a; --warn-light: #fef3e2;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex;
+    align-items: center; justify-content: center;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: radial-gradient(circle at 20% 20%, #e0f7f9 0%, transparent 50%),
+                      radial-gradient(circle at 80% 80%, #f3e8f8 0%, transparent 50%);
+    z-index: 0;
+  }
+  .container { width: 100%; max-width: 420px; padding: 1rem; position: relative; z-index: 1; }
+  .logo {
+    text-align: center; margin-bottom: 2rem;
+    font-size: 1.3rem; font-weight: 700; letter-spacing: -.03em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  }
+  .tabs {
+    display: flex; background: var(--bg);
+    border-radius: 10px; padding: 4px; margin-bottom: 1.5rem;
+  }
+  .tab {
+    flex: 1; background: none; border: none;
+    padding: .5rem; border-radius: 7px;
+    font-size: .88rem; font-weight: 600; font-family: inherit;
+    color: var(--text2); cursor: pointer; transition: background .15s, color .15s;
+  }
+  .tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  .form { display: none; }
+  .form.active { display: block; }
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    color: var(--text2); margin-bottom: .35rem;
+  }
+  .field input, .field select {
+    width: 100%; padding: .6rem .8rem;
+    background: #faf9f7; border: 1.5px solid var(--border);
+    border-radius: 9px; font-size: .9rem; font-family: inherit;
+    color: var(--text); transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus, .field select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .btn {
+    width: 100%; padding: .7rem;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 9px;
+    font-size: .95rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: opacity .15s, transform .1s; margin-top: .25rem;
+  }
+  .btn:hover { opacity: .9; }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .6; cursor: not-allowed; }
+  .error-msg {
+    background: var(--danger-light); border: 1px solid #f5b8b8;
+    color: var(--danger); border-radius: 8px;
+    padding: .6rem .8rem; font-size: .82rem; font-weight: 500;
+    margin-bottom: 1rem; display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* Role password field — aparece quando role != aluno */
+  .role-pass-field {
+    overflow: hidden; max-height: 0;
+    transition: max-height .3s ease, opacity .3s ease;
+    opacity: 0;
+  }
+  .role-pass-field.show { max-height: 100px; opacity: 1; }
+  .role-warn {
+    background: var(--warn-light); border: 1px solid #f5d0a0;
+    color: var(--warn); border-radius: 8px;
+    padding: .55rem .8rem; font-size: .78rem; font-weight: 500;
+    margin-bottom: .8rem; display: none;
+  }
+  .role-warn.show { display: block; }
+
+  .roles-info {
+    margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;
+  }
+  .role-item {
+    display: flex; align-items: flex-start; gap: .6rem;
+    margin-bottom: .5rem; font-size: .78rem; color: var(--text2);
+  }
+  .role-badge {
+    font-size: .68rem; font-weight: 700; padding: .2rem .55rem;
+    border-radius: 999px; white-space: nowrap; flex-shrink: 0; margin-top: 1px;
+  }
+
+  .demo-info {
+    background: var(--accent-light); border-radius: 9px;
+    padding: .8rem 1rem; font-size: .78rem; color: var(--accent);
+    margin-top: 1.2rem; line-height: 1.5;
+  }
+  .demo-info strong { display: block; margin-bottom: .2rem; font-size: .8rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo"><div class="logo-dot"></div> EduScheduler</div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Entrar</button>
+      <button class="tab" onclick="switchTab('register')">Criar Conta</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="form active" id="formLogin">
+      <div class="error-msg" id="loginError"></div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="email@escola.pt" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+      <div class="demo-info">
+        <strong>🔑 Conta de demo (Admin)</strong>
+        Email: <code><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7716131a1e1937120414181b16590703">[email&#160;protected]</a></code> &nbsp;·&nbsp; Password: <code>admin123</code>
+      </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="form" id="formRegister">
+      <div class="error-msg" id="registerError"></div>
+      <div class="field">
+        <label>Nome completo</label>
+        <input type="text" id="regNome" placeholder="O teu nome">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="email@escola.pt">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="field">
+        <label>Tipo de conta</label>
+        <select id="regRole" onchange="onRoleChange()">
+          <option value="aluno">👤 Aluno — visualizar horários</option>
+          <option value="professor">👨‍🏫 Professor — editar horários</option>
+          <option value="admin">🛡️ Administrador — acesso total</option>
+        </select>
+      </div>
+
+      <!-- Campo de password de role (aparece para professor/admin) -->
+      <div class="role-warn show" id="roleWarn">
+        🔒 Para criar uma conta de <strong id="roleWarnName">Professor</strong> é necessária uma password especial fornecida pelo administrador.
+      </div>
+      <div class="role-pass-field" id="rolePassField">
+        <div class="field">
+          <label id="rolePassLabel">Password de Professor</label>
+          <input type="password" id="regRolePassword" placeholder="Password especial">
+        </div>
+      </div>
+
+      <button class="btn" id="registerBtn" onclick="doRegister()">Criar Conta</button>
+
+      <div class="roles-info">
+        <div class="role-item">
+          <span class="role-badge" style="background:#e8fdf0;color:#1a9a5a">Aluno</span>
+          Pode ver horários, disciplinas e professores. Sem edição.
+        </div>
+        <div class="role-item">
+          <span class="role-badge" style="background:#f3e8f8;color:#8b44c2">Professor</span>
+          Pode criar e editar aulas, disciplinas e turmas.
+        </div>
+        <div class="role-item">
+          <span class="role-badge" style="background:#e0f7f9;color:#00a8b5">Admin</span>
+          Acesso total incluindo gestão de utilizadores.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) =>
+    t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('formLogin').classList.toggle('active', tab==='login');
+  document.getElementById('formRegister').classList.toggle('active', tab==='register');
+}
+
+function onRoleChange() {
+  const role = document.getElementById('regRole').value;
+  const warn = document.getElementById('roleWarn');
+  const field = document.getElementById('rolePassField');
+  const label = document.getElementById('rolePassLabel');
+  const warnName = document.getElementById('roleWarnName');
+
+  if (role === 'aluno') {
+    warn.classList.remove('show');
+    field.classList.remove('show');
+  } else {
+    const nome = role === 'admin' ? 'Administrador' : 'Professor';
+    warnName.textContent = nome;
+    warn.classList.add('show');
+    label.textContent = `Password de ${nome}`;
+    field.classList.add('show');
+  }
+}
+
+// Inicializa o estado correto (aluno por defeito — sem campo extra)
+document.getElementById('roleWarn').classList.remove('show');
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
+function hideError(id) { document.getElementById(id).classList.remove('show'); }
+
+async function doLogin() {
+  hideError('loginError');
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) return showError('loginError', 'Preenche todos os campos.');
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'A entrar...';
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }), credentials: 'include'
+    });
+    const data = await r.json();
+    if (!r.ok) { showError('loginError', data.error); btn.disabled=false; btn.textContent='Entrar'; return; }
+    window.location.href = '/';
+  } catch {
+    showError('loginError', 'Erro de ligação ao servidor.');
+    btn.disabled=false; btn.textContent='Entrar';
+  }
+}
+
+async function doRegister() {
+  hideError('registerError');
+  const nome         = document.getElementById('regNome').value.trim();
+  const email        = document.getElementById('regEmail').value.trim();
+  const password     = document.getElementById('regPassword').value;
+  const role         = document.getElementById('regRole').value;
+  const rolePassword = document.getElementById('regRolePassword').value;
+
+  if (!nome || !email || !password) return showError('registerError', 'Preenche todos os campos.');
+  if (password.length < 6) return showError('registerError', 'Password deve ter pelo menos 6 caracteres.');
+  if (role !== 'aluno' && !rolePassword) return showError('registerError', `Introduz a password especial de ${role}.`);
+
+  const btn = document.getElementById('registerBtn');
+  btn.disabled=true; btn.textContent='A criar...';
+  try {
+    const r = await fetch('/api/auth/register', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nome, email, password, role, rolePassword }),
+      credentials: 'include'
+    });
+    const data = await r.json();
+    if (!r.ok) { showError('registerError', data.error); btn.disabled=false; btn.textContent='Criar Conta'; return; }
+    // Auto login
+    await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password }), credentials:'include'
+    });
+    window.location.href = '/';
+  } catch {
+    showError('registerError', 'Erro de ligação ao servidor.');
+    btn.disabled=false; btn.textContent='Criar Conta';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('formLogin').classList.contains('active')) doLogin();
+  else doRegister();
+});
+</script>
+</body>
+</html>

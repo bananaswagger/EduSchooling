@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduScheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .user-menu-wrap { position: relative; }
+  .user-btn {
+    display:flex;align-items:center;gap:.5rem;background:none;
+    border:1px solid var(--border);border-radius:999px;padding:.3rem .7rem .3rem .3rem;
+    cursor:pointer;font-family:inherit;transition:background .12s;
+  }
+  .user-btn:hover { background:var(--surface2); }
+  .user-btn .avatar {
+    width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;
+  }
+  .user-btn .uname { font-size:.82rem;font-weight:600;color:var(--text); }
+  .role-badge-ui {
+    font-size:.65rem;font-weight:700;padding:.15rem .45rem;
+    border-radius:999px;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .user-dropdown {
+    position:absolute;right:0;top:calc(100% + 6px);
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.12);
+    min-width:210px;overflow:hidden;z-index:200;display:none;
+  }
+  .user-dropdown.open { display:block; }
+  .ud-header { padding:.8rem 1rem;border-bottom:1px solid var(--border);background:var(--surface2); }
+  .ud-nome { font-size:.88rem;font-weight:700; }
+  .ud-email { font-size:.75rem;color:var(--text2);margin-top:.1rem; }
+  .ud-role { font-size:.72rem;margin-top:.35rem; }
+  .ud-item {
+    display:flex;align-items:center;gap:.6rem;padding:.6rem 1rem;
+    font-size:.84rem;font-weight:500;cursor:pointer;color:var(--text2);
+    transition:background .1s,color .1s;background:none;border:none;
+    width:100%;text-align:left;font-family:inherit;
+  }
+  .ud-item:hover { background:var(--surface2);color:var(--text); }
+  .ud-item.danger { color:var(--danger); }
+  .ud-item.danger:hover { background:var(--danger-light); }
+
+  body.role-aluno  .admin-only { display:none !important; }
+  body.role-professor .admin-only { display:none !important; }
+
+  /* Tabela de gestão em ecrã completo */
+  .gestao-page {
+    padding: 1.5rem 2rem;
+  }
+  .gestao-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .gestao-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .9rem 1.2rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .gestao-section-title {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .gestao-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .84rem;
+  }
+  .gestao-table th {
+    padding: .6rem 1rem;
+    text-align: left;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .gestao-table td {
+    padding: .65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .gestao-table tr:last-child td { border-bottom: none; }
+  .gestao-table tr:hover td { background: var(--surface2); }
+  .gestao-add-row {
+    display: flex;
+    gap: .5rem;
+    padding: .8rem 1rem;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+  }
+  .gestao-add-row input {
+    flex: 1;
+    padding: .45rem .7rem;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-size: .84rem;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .gestao-add-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+  <div class="logo"><span class="logo-dot"></span> EduScheduler</div>
+  <div class="header-right">
+    <div class="user-menu-wrap">
+      <button class="user-btn" onclick="toggleUserMenu()">
+        <div class="avatar" id="userAvatar">?</div>
+        <span class="uname" id="userName">...</span>
+        <span class="role-badge-ui" id="userRoleBadge"></span>
+      </button>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="ud-header">
+          <div class="ud-nome" id="udNome"></div>
+          <div class="ud-email" id="udEmail"></div>
+          <div class="ud-role" id="udRole"></div>
+        </div>
+        <button class="ud-item danger" onclick="doLogout()">🚪 Sair</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+<div class="app-layout">
+  <aside id="sidebar">
+    <nav>
+      <div class="nav-label">Gestão</div>
+      <button class="nav-item active" onclick="showSection('turmas', this)">🏫 Turmas</button>
+      <button class="nav-item" onclick="showSection('professores', this)">👨‍🏫 Professores</button>
+      <button class="nav-item" onclick="showSection('disciplinas', this)">📚 Disciplinas</button>
+    </nav>
+  </aside>
+
+  <main id="mainContent">
+    <div id="sectionContent" class="gestao-page"></div>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let currentUser = null;
+
+// ── Auth ──────────────────────────────────────────────
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!r.ok) { window.location.href = '/login.html'; return false; }
+    currentUser = await r.json();
+    window.currentUser = currentUser;
+    applyRole(currentUser);
+    return true;
+  } catch { window.location.href = '/login.html'; return false; }
+}
+
+function applyRole(user) {
+  document.body.classList.add('role-' + user.role);
+  const initials = user.nome.split(' ').filter(w=>w.length>1).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+  document.getElementById('userAvatar').textContent = initials;
+  document.getElementById('userName').textContent = user.nome.split(' ')[0];
+  document.getElementById('udNome').textContent  = user.nome;
+  document.getElementById('udEmail').textContent = user.email;
+  const roleMap = {
+    admin:     { label:'Admin',     cor:'#00a8b5', bg:'#e0f7f9', desc:'Acesso total' },
+    professor: { label:'Professor', cor:'#8b44c2', bg:'#f3e8f8', desc:'Só visualização' },
+    aluno:     { label:'Aluno',     cor:'#1a9a5a', bg:'#e8fdf0', desc:'Só visualização' },
+  };
+  const rm = roleMap[user.role] || roleMap.aluno;
+  const badge = document.getElementById('userRoleBadge');
+  badge.textContent = rm.label;
+  badge.style.color = rm.cor;
+  badge.style.background = rm.bg;
+  document.getElementById('udRole').innerHTML =
+    `<span style="font-size:.72rem;color:${rm.cor};font-weight:600">${rm.label}</span> · ${rm.desc}`;
+}
+
+function toggleUserMenu() { document.getElementById('userDropdown').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  if (!e.target.closest('.user-menu-wrap')) document.getElementById('userDropdown').classList.remove('open');
+});
+async function doLogout() {
+  await fetch('/api/auth/logout', { method:'POST', credentials:'include' });
+  window.location.href = '/login.html';
+}
+
+// ── API ───────────────────────────────────────────────
+async function api(path, opts={}) {
+  const r = await fetch(path, {
+    headers: {'Content-Type':'application/json'},
+    credentials: 'include',
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({error:r.statusText})); throw new Error(e.error||'Erro'); }
+  return r.json();
+}
+
+function toast(msg, err=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = err ? '#c94040' : '#1a1814';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2800);
+}
+
+const isAdmin = () => window.currentUser?.role === 'admin';
+
+// ── Secções ───────────────────────────────────────────
+let currentSection = 'turmas';
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  sidebar.classList.toggle('open');
+  backdrop.classList.toggle('open');
+}
+
+function showSection(section, el) {
+  currentSection = section;
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  // Fecha sidebar no mobile ao selecionar secção
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('open');
+  }
+  render();
+  document.getElementById('userDropdown').classList.remove('open');
+}
+
+async function render() {
+  const el = document.getElementById('sectionContent');
+  el.innerHTML = '<div class="loading">A carregar...</div>';
+  if (currentSection === 'turmas')       await renderTurmas();
+  if (currentSection === 'professores')  await renderProfessores();
+  if (currentSection === 'disciplinas')  await renderDisciplinas();
+  if (currentSection === 'utilizadores') await renderUtilizadores();
+}
+
+// ── TURMAS ────────────────────────────────────────────
+async function renderTurmas() {
+  const rows = await api('/api/turmas');
+  const admin = isAdmin();
+  document.getElementById('sectionContent').innerHTML = `
+  <div class="gestao-section">
+    <div class="gestao-section-header">
+      <span class="gestao-section-title">🏫 Turmas</span>
+      <span style="font-size:.78rem;color:var(--text2)">${rows.length} turma${rows.length!==1?'s':''}</span>
+    </div>
+    <div class="gestao-table-wrap"><table class="gestao-table">
+      <tr><th>Nome</th><th>Ano</th><th>Área</th>${admin?'<th></th>':''}</tr>
+      ${rows.map(r=>`<tr>
+        <td><strong>${r.nome}</strong></td>
+        <td>${r.ano}.º ano</td>
+        <td>${r.area}</td>
+        ${admin?`<td><button class="btn-sm danger" onclick="deleteTurma(${r.id})">Apagar</button></td>`:''}
+      </tr>`).join('')}
+    </table></div>
+    ${admin ? `<div class="gestao-add-row">
+      <input id="tNome" placeholder="Nome (ex: 12.º C)">
+      <input id="tAno" placeholder="Ano" type="number" style="max-width:80px">
+      <input id="tArea" placeholder="Área">
+      <button class="btn-primary" onclick="addTurma()">+ Adicionar</button>
+    </div>` : '<p style="padding:.8rem 1rem;font-size:.8rem;color:var(--text3)">👁 Modo leitura</p>'}
+  </div>`;
+}
+
+async function addTurma() {
+  try {
+    await api('/api/turmas', { method:'POST', body:{ nome:v('tNome'), ano:parseInt(v('tAno')), area:v('tArea') }});
+    toast('✅ Turma adicionada'); render();
+  } catch(e) { toast('❌ '+e.message, true); }
+}
+async function deleteTurma(id) {
+  if (!confirm('Apagar turma?')) return;
+  try { await api('/api/turmas/'+id, { method:'DELETE' }); toast('🗑 Turma apagada'); render(); }
+  catch(e) { toast('❌ '+e.message, true); }
+}
+
+// ── PROFESSORES ───────────────────────────────────────
+async function renderProfessores() {
+  const rows = await api('/api/professores');
+  const admin = isAdmin();
+  document.getElementById('sectionContent').innerHTML = `
+  <div class="gestao-section">
+    <div class="gestao-section-header">
+      <span class="gestao-section-title">👨‍🏫 Professores</span>
+      <span style="font-size:.78rem;color:var(--text2)">${rows.length} professor${rows.length!==1?'es':''}</span>
+    </div>
+    <div class="gestao-table-wrap"><table class="gestao-table">
+      <tr><th>Nome</th><th>Email</th>${admin?'<th></th>':''}</tr>
+      ${rows.map(r=>`<tr>
+        <td><strong>${r.nome}</strong></td>
+        <td style="color:var(--text2)">${r.email||'—'}</td>
+        ${admin?`<td><button class="btn-sm danger" onclick="deleteProf(${r.id})">Apagar</button></td>`:''}
+      </tr>`).join('')}
+    </table></div>
+    ${admin ? `<div class="gestao-add-row">
+      <input id="pNome" placeholder="Nome do professor">
+      <input id="pEmail" placeholder="Email" type="email">
+      <button class="btn-primary" onclick="addProf()">+ Adicionar</button>
+    </div>` : '<p style="padding:.8rem 1rem;font-size:.8rem;color:var(--text3)">👁 Modo leitura</p>'}
+  </div>`;
+}
+
+async function addProf() {
+  try {
+    await api('/api/professores', { method:'POST', body:{ nome:v('pNome'), email:v('pEmail') }});
+    toast('✅ Professor adicionado'); render();
+  } catch(e) { toast('❌ '+e.message, true); }
+}
+async function deleteProf(id) {
+  if (!confirm('Apagar professor?')) return;
+  try { await api('/api/professores/'+id, { method:'DELETE' }); toast('🗑 Professor apagado'); render(); }
+  catch(e) { toast('❌ '+e.message, true); }
+}
+
+// ── DISCIPLINAS ───────────────────────────────────────
+async function renderDisciplinas() {
+  const rows = await api('/api/disciplinas');
+  const admin = isAdmin();
+  document.getElementById('sectionContent').innerHTML = `
+  <div class="gestao-section">
+    <div class="gestao-section-header">
+      <span class="gestao-section-title">📚 Disciplinas</span>
+      <span style="font-size:.78rem;color:var(--text2)">${rows.length} disciplina${rows.length!==1?'s':''}</span>
+    </div>
+    <div class="gestao-table-wrap"><table class="gestao-table">
+      <tr><th>Ícone</th><th>Nome</th>${admin?'<th></th>':''}</tr>
+      ${rows.map(r=>`<tr>
+        <td style="font-size:1.3rem">${r.icone}</td>
+        <td><strong>${r.nome}</strong></td>
+        ${admin?`<td><button class="btn-sm danger" onclick="deleteDisc(${r.id})">Apagar</button></td>`:''}
+      </tr>`).join('')}
+    </table></div>
+    ${admin ? `<div class="gestao-add-row">
+      <input id="dNome" placeholder="Nome da disciplina">
+      <input id="dIcone" placeholder="Ícone (emoji)" style="max-width:90px">
+      <button class="btn-primary" onclick="addDisc()">+ Adicionar</button>
+    </div>` : '<p style="padding:.8rem 1rem;font-size:.8rem;color:var(--text3)">👁 Modo leitura</p>'}
+  </div>`;
+}
+
+async function addDisc() {
+  try {
+    await api('/api/disciplinas', { method:'POST', body:{ nome:v('dNome'), icone:v('dIcone')||'📚' }});
+    toast('✅ Disciplina adicionada'); render();
+  } catch(e) { toast('❌ '+e.message, true); }
+}
+async function deleteDisc(id) {
+  if (!confirm('Apagar disciplina?')) return;
+  try { await api('/api/disciplinas/'+id, { method:'DELETE' }); toast('🗑 Disciplina apagada'); render(); }
+  catch(e) { toast('❌ '+e.message, true); }
+}
+
+// ── UTILIZADORES ─────────────────────────────────────
+async function renderUtilizadores() {
+  if (!isAdmin()) { document.getElementById('sectionContent').innerHTML = '<p style="padding:1rem">Sem permissão.</p>'; return; }
+  const rows = await api('/api/utilizadores');
+  document.getElementById('sectionContent').innerHTML = `
+  <div class="gestao-section">
+    <div class="gestao-section-header">
+      <span class="gestao-section-title">👥 Utilizadores</span>
+      <span style="font-size:.78rem;color:var(--text2)">${rows.length} utilizador${rows.length!==1?'es':''}</span>
+    </div>
+    <div class="gestao-table-wrap"><table class="gestao-table">
+      <tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Último login</th><th></th></tr>
+      ${rows.map(r=>`<tr>
+        <td><strong>${r.nome}</strong></td>
+        <td style="color:var(--text2)">${r.email}</td>
+        <td style="display:flex;gap:.4rem;align-items:center">
+          <select id="role_${r.id}" style="font-size:.78rem;padding:.2rem .4rem;border-radius:5px;border:1px solid var(--border)">
+            ${['admin','professor','aluno'].map(role=>`<option value="${role}" ${r.role===role?'selected':''}>${role}</option>`).join('')}
+          </select>
+          <button class="btn-sm" onclick="changeRole(${r.id})" style="background:var(--accent);color:#fff;border:none;padding:.2rem .6rem;border-radius:5px;cursor:pointer;font-size:.75rem">Guardar</button>
+        </td>
+        <td style="font-size:.75rem;color:var(--text3)">${r.ultimo_login ? new Date(r.ultimo_login).toLocaleString('pt-PT') : 'Nunca'}</td>
+        <td><button class="btn-sm danger" onclick="deleteUser(${r.id})">Apagar</button></td>
+      </tr>`).join('')}
+    </table>
+  </div>`;
+}
+
+async function changeRole(id) {
+  const select = document.getElementById('role_' + id);
+  const role = select?.value;
+  if (!role) return;
+  try {
+    const r = await fetch(`/api/utilizadores/${id}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ role })
+    });
+    const data = await r.json();
+    if (!r.ok) { toast('❌ ' + (data.error || 'Erro'), true); return; }
+    toast('✅ Perfil atualizado');
+  } catch(e) { toast('❌ ' + e.message, true); }
+}
+async function deleteUser(id) {
+  if (!confirm('Apagar utilizador?')) return;
+  try { await api(`/api/utilizadores/${id}`, { method:'DELETE' }); toast('🗑 Utilizador apagado'); render(); }
+  catch(e) { toast('❌ '+e.message, true); }
+}
+
+// ── Helpers ───────────────────────────────────────────
+function v(id) { return document.getElementById(id)?.value||''; }
+
+// ── Realtime ──────────────────────────────────────────
+function initRealtime() {
+  const socket = io();
+  ['turmas','professores','disciplinas'].forEach(ev => {
+    socket.on(ev+':update', () => { if (currentSection === ev) render(); });
+  });
+}
+
+// ── Init ──────────────────────────────────────────────
+checkAuth().then(ok => {
+  if (ok) { render(); initRealtime(); }
+});
+</script>
+</body>
+</html>
