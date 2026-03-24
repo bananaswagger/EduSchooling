@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduScheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .user-menu-wrap { position: relative; }
+  .user-btn {
+    display: flex; align-items: center; gap: .5rem;
+    background: none; border: 1px solid var(--border);
+    border-radius: 999px; padding: .3rem .7rem .3rem .3rem;
+    cursor: pointer; font-family: inherit; transition: background .12s;
+  }
+  .user-btn:hover { background: var(--surface2); }
+  .user-btn .avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .65rem; font-weight: 700;
+  }
+  .user-btn .uname { font-size: .82rem; font-weight: 600; color: var(--text); }
+  .role-badge-ui {
+    font-size: .65rem; font-weight: 700; padding: .15rem .45rem;
+    border-radius: 999px; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .user-dropdown {
+    position: absolute; right: 0; top: calc(100% + 6px);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 11px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    min-width: 210px; overflow: hidden; z-index: 200; display: none;
+  }
+  .user-dropdown.open { display: block; }
+  .ud-header { padding: .8rem 1rem; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .ud-nome { font-size: .88rem; font-weight: 700; }
+  .ud-email { font-size: .75rem; color: var(--text2); margin-top: .1rem; }
+  .ud-role { font-size: .72rem; margin-top: .35rem; }
+  .ud-item {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .6rem 1rem; font-size: .84rem; font-weight: 500;
+    cursor: pointer; color: var(--text2);
+    transition: background .1s, color .1s;
+    background: none; border: none; width: 100%; text-align: left; font-family: inherit;
+  }
+  .ud-item:hover { background: var(--surface2); color: var(--text); }
+  .ud-item.danger { color: var(--danger); }
+  .ud-item.danger:hover { background: var(--danger-light); }
+
+  /* Aluno: esconde tudo de edição */
+  body.role-aluno     .editor-only { display: none !important; }
+  body.role-aluno     .admin-only  { display: none !important; }
+  body.role-aluno     .btn-danger  { display: none !important; }
+  body.role-professor .admin-only  { display: none !important; }
+  body.role-professor .btn-danger  { display: none !important; }
+  /* professor vê gestão mas só leitura */
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-dot"></span> EduScheduler</div>
+  <div class="header-center">
+    <select id="turmaSelect" onchange="App.changeTurma(this.value)"></select>
+  </div>
+  <div class="header-right">
+    <button class="btn-primary editor-only" onclick="Modal.openAdd()">+ Nova Aula</button>
+    <div class="user-menu-wrap">
+      <button class="user-btn" onclick="toggleUserMenu()">
+        <div class="avatar" id="userAvatar">?</div>
+        <span class="uname" id="userName">...</span>
+        <span class="role-badge-ui" id="userRoleBadge"></span>
+      </button>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="ud-header">
+          <div class="ud-nome" id="udNome"></div>
+          <div class="ud-email" id="udEmail"></div>
+          <div class="ud-role" id="udRole"></div>
+        </div>
+        <button class="ud-item admin-only" id="btnGerirUsers" onclick="Modal.openGestao('utilizadores')">👥 Gerir Utilizadores</button>
+        <button class="ud-item danger" onclick="doLogout()">🚪 Sair</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="app-layout">
+  <aside id="sidebar">
+    <nav>
+      <div class="nav-label">Vistas</div>
+      <button class="nav-item active" data-view="week" onclick="App.setView('week',this)">📅 Horário Semanal</button>
+      <button class="nav-item" data-view="list" onclick="App.setView('list',this)">📋 Lista de Aulas</button>
+      <button class="nav-item" data-view="discs" onclick="App.setView('discs',this)">📚 Disciplinas</button>
+      <button class="nav-item" data-view="profs" onclick="App.setView('profs',this)">👤 Professores</button>
+      <button class="nav-item" data-view="stats" onclick="App.setView('stats',this)">📊 Estatísticas</button>
+    </nav>
+    <!-- Secção de aulas: professor e admin podem criar -->
+    <div class="sidebar-divider editor-only"></div>
+    <div class="nav-label editor-only">Aulas</div>
+    <button class="nav-item editor-only" onclick="Modal.openAdd()">➕ Nova Aula</button>
+
+    <div class="sidebar-divider"></div>
+    <div class="nav-label">Gestão</div>
+    <button class="nav-item" onclick="Modal.openGestao('turmas')">🏫 Turmas</button>
+    <button class="nav-item" onclick="Modal.openGestao('professores')">👨‍🏫 Professores</button>
+    <button class="nav-item" onclick="Modal.openGestao('disciplinas')">📖 Disciplinas</button>
+  </aside>
+
+  <main id="mainContent">
+    <div id="viewWeek" class="view active"></div>
+    <div id="viewList" class="view" style="display:none"></div>
+    <div id="viewDiscs" class="view" style="display:none"></div>
+    <div id="viewProfs" class="view" style="display:none"></div>
+    <div id="viewStats" class="view" style="display:none"></div>
+  </main>
+</div>
+
+<!-- Modal: Detail -->
+<div class="overlay" id="overlayDetail" onclick="Modal.close('overlayDetail')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="detTitulo"></h2>
+      <button class="modal-x" onclick="Modal.close('overlayDetail')">✕</button>
+    </div>
+    <div class="detail-grid" id="detGrid"></div>
+    <div class="modal-actions">
+      <button class="btn-danger admin-only" id="detDelete" onclick="App.deleteAula()">🗑 Apagar</button>
+      <button class="btn-secondary" onclick="Modal.close('overlayDetail')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Aula -->
+<div class="overlay" id="overlayAdd" onclick="Modal.close('overlayAdd')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="addModalTitle">Nova Aula</h2>
+      <button class="modal-x" onclick="Modal.close('overlayAdd')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-field full">
+        <label>Disciplina</label>
+        <select id="fDisc"></select>
+      </div>
+      <div class="form-field">
+        <label>Professor</label>
+        <select id="fProf"></select>
+      </div>
+      <div class="form-field">
+        <label>Sala</label>
+        <input type="text" id="fSala" placeholder="Ex: A1.01">
+      </div>
+      <div class="form-field">
+        <label>Dia da Semana</label>
+        <select id="fDia">
+          <option value="0">Segunda-feira</option>
+          <option value="1">Terça-feira</option>
+          <option value="2">Quarta-feira</option>
+          <option value="3">Quinta-feira</option>
+          <option value="4">Sexta-feira</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Hora de Início</label>
+        <select id="fHora"></select>
+      </div>
+      <div class="form-field">
+        <label>Duração</label>
+        <select id="fDur">
+          <option value="1">1 bloco (50 min)</option>
+          <option value="2">2 blocos (100 min)</option>
+          <option value="3">3 blocos (150 min)</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Turma</label>
+        <select id="fTurma"></select>
+      </div>
+    </div>
+    <div id="conflictAlert" class="conflict-alert" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="Modal.close('overlayAdd')">Cancelar</button>
+      <button class="btn-primary" onclick="App.saveAula()">Guardar Aula</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gestão -->
+<div class="overlay" id="overlayGestao" onclick="Modal.close('overlayGestao')">
+  <div class="modal modal-wide" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="gestaoTitle">Gestão</h2>
+      <button class="modal-x" onclick="Modal.close('overlayGestao')">✕</button>
+    </div>
+    <div id="gestaoContent"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/app.js"></script>
+<script>
+let currentUser = null;
+
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!r.ok) { window.location.href = '/login.html'; return false; }
+    currentUser = await r.json();
+    window.currentUser = currentUser;
+    applyRole(currentUser);
+    return true;
+  } catch {
+    window.location.href = '/login.html';
+    return false;
+  }
+}
+
+function applyRole(user) {
+  document.body.classList.add('role-' + user.role);
+
+  const initials = user.nome.split(' ').filter(w=>w.length>1).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+  document.getElementById('userAvatar').textContent = initials;
+  document.getElementById('userName').textContent = user.nome.split(' ')[0];
+  document.getElementById('udNome').textContent = user.nome;
+  document.getElementById('udEmail').textContent = user.email;
+
+  const roleMap = {
+    admin:     { label:'Admin',     cor:'#2d5be3', bg:'#e8edfb', desc:'Acesso total' },
+    professor: { label:'Professor', cor:'#8b44c2', bg:'#f3e8f8', desc:'Pode criar aulas' },
+    aluno:     { label:'Aluno',     cor:'#1a9a5a', bg:'#e8fdf0', desc:'Apenas visualização' },
+  };
+  const rm = roleMap[user.role] || roleMap.aluno;
+  const badge = document.getElementById('userRoleBadge');
+  badge.textContent = rm.label;
+  badge.style.color = rm.cor;
+  badge.style.background = rm.bg;
+  document.getElementById('udRole').innerHTML =
+    `<span style="font-size:.72rem;color:${rm.cor};font-weight:600">${rm.label}</span> · ${rm.desc}`;
+}
+
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.user-menu-wrap'))
+    document.getElementById('userDropdown').classList.remove('open');
+});
+
+async function doLogout() {
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  window.location.href = '/login.html';
+}
+
+checkAuth().then(ok => { if (ok) { boot(); initRealtime(); } });
+
+// ── Tempo real (Socket.io) ───────────────────────
+function initRealtime() {
+  const socket = io();
+
+  // Quando as aulas mudam, recarrega e re-renderiza
+  socket.on('aulas:update', async () => {
+    S.aulas = await api(`/api/aulas?turma_id=${S.turmaId}`);
+    updateCounts();
+    render();
+    // Fecha o modal de detalhe se estava aberto (a aula pode já não existir)
+    Modal.close('overlayDetail');
+    showRealtimeToast('🔄 Horário atualizado');
+  });
+
+  socket.on('turmas:update', async () => {
+    S.turmas = await api('/api/turmas');
+    buildTurmaSelect();
+    showRealtimeToast('🔄 Turmas atualizadas');
+  });
+
+  socket.on('professores:update', async () => {
+    S.profs = await api('/api/professores');
+    if (S.view === 'profs') render();
+    showRealtimeToast('🔄 Professores atualizados');
+  });
+
+  socket.on('disciplinas:update', async () => {
+    S.discs = await api('/api/disciplinas');
+    S.aulas = await api(`/api/aulas?turma_id=${S.turmaId}`);
+    updateCounts();
+    render();
+    showRealtimeToast('🔄 Disciplinas atualizadas');
+  });
+
+  socket.on('tipos:update', async () => {
+    S.tipos = await api('/api/tipos');
+    buildTipoFilters();
+    showRealtimeToast('🔄 Tipos atualizados');
+  });
+}
+
+function showRealtimeToast(msg) {
+  // Só mostra para quem não fez a ação (evita toast duplo)
+  const el = document.getElementById('toast');
+  if (el.classList.contains('show')) return; // já tem um toast
+  el.textContent = msg;
+  el.style.background = '#1a5e3a';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
